@@ -1,0 +1,613 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap');
+
+@layer base {
+  :root {
+    /* ── Brand / accent (hex baseline kept for Safari < 15.4 / older Chromium) */
+    --brand:        #f97316;
+    --brand-600:    #ea580c;
+    --accent:       #14b8a6;
+    --accent-600:   #0d9488;
+    --brand-glow:   #f9731655;
+    --accent-glow:  #14b8a640;
+
+    /* ── Surfaces / text — neutral defaults; moods override in their own :root */
+    --surface:      oklch(0.985 0 0);
+    --surface-2:    oklch(0.97  0 0);
+    --text-1:       oklch(0.17  0 0);
+    --text-2:       oklch(0.45  0 0);
+
+    /* ── Hairline divider — perceptually-uniform 8% of currentColor.
+       Use as: border-color: var(--hairline); */
+    --hairline:     color-mix(in oklch, currentColor 8%, transparent);
+    --hairline-strong: color-mix(in oklch, currentColor 14%, transparent);
+
+    /* ── Curated easing vocabulary. Reference these everywhere — never
+       hand-roll cubic-bezier in JSX. */
+    --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);   /* expo-out — heroes, modals, big reveals */
+    --ease-hover:    cubic-bezier(0.22, 1, 0.36, 1);  /* quart-out — micro-interactions */
+    --ease-morph:    cubic-bezier(0.65, 0, 0.35, 1);  /* in-out-cubic — FLIP, shared elements */
+    --ease-exit:     cubic-bezier(0.7, 0, 0.84, 0);   /* quart-in — exits only */
+
+    /* ── Standard durations — pair with the easings above. */
+    --dur-fast:      180ms;
+    --dur-base:      320ms;
+    --dur-slow:      560ms;
+    --dur-reveal:    900ms;
+
+    /* ── Texture knobs */
+    --grain-opacity: 0.03;
+  }
+
+  /* OKLCH-uniform tints when supported (Safari 15.4+ / Chrome 111+ / FF 113+).
+     For older browsers the hex --brand / --accent above remain authoritative
+     and color-mix() falls back via @supports. */
+  @supports (color: oklch(50% 0 0)) {
+    :root {
+      --brand-soft:   color-mix(in oklch, var(--brand) 14%, transparent);
+      --brand-tint:   color-mix(in oklch, var(--brand) 22%, var(--surface));
+      --accent-soft:  color-mix(in oklch, var(--accent) 14%, transparent);
+      --accent-tint:  color-mix(in oklch, var(--accent) 22%, var(--surface));
+    }
+  }
+  @supports not (color: oklch(50% 0 0)) {
+    :root {
+      --brand-soft:   #f9731624;
+      --brand-tint:   #f9731638;
+      --accent-soft:  #14b8a624;
+      --accent-tint:  #14b8a638;
+    }
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Variable font opsz: small text gets heavier strokes, headlines get
+       elegant proportions. Costs nothing, feels expensive. */
+    font-optical-sizing: auto;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
+  body {
+    /* Kerning + ligatures default-on. */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Kill widows on headlines, balance two-line wraps. text-wrap support: ~95%. */
+  h1, h2, .display { text-wrap: balance; }
+  p, li, blockquote, .prose { text-wrap: pretty; }
+
+  ::selection { background-color: #f9731640; color: inherit; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .perspective-card { perspective: 1200px; transform-style: preserve-3d; }
+  .tilt-on-hover { transition: transform 0.4s cubic-bezier(0.21, 1.02, 0.73, 0.99); transform-style: preserve-3d; }
+  .tilt-on-hover:hover { transform: rotateX(4deg) rotateY(-6deg) translateZ(8px); }
+
+  /* Cursor-aware soft brand-glow that follows the pointer.
+     Set --mx and --my (in px) on document.documentElement via a mousemove handler:
+       window.addEventListener("pointermove", e => {
+         document.documentElement.style.setProperty("--mx", e.clientX + "px");
+         document.documentElement.style.setProperty("--my", e.clientY + "px");
+       });
+  */
+  .cursor-glow { position: relative; overflow: hidden; }
+  .cursor-glow::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(circle 320px at var(--mx, 50%) var(--my, 50%), var(--brand-glow), transparent 70%);
+    transition: background 0.18s ease;
+  }
+  .cursor-glow > * { position: relative; z-index: 1; }
+
+  /* Magnetic button — JS adds inline transform on pointermove within bounds, removes on leave.
+     The transform is applied directly via style.transform — no CSS needed beyond the smooth transition.
+     Pattern:
+       el.addEventListener("pointermove", e => {
+         const r = el.getBoundingClientRect();
+         const x = (e.clientX - r.left - r.width/2) * 0.25;
+         const y = (e.clientY - r.top - r.height/2) * 0.35;
+         el.style.transform = "translate(" + x + "px," + y + "px)";
+       });
+       el.addEventListener("pointerleave", () => el.style.transform = "");
+  */
+  .magnetic { transition: transform 0.25s cubic-bezier(0.21, 1.02, 0.73, 0.99); will-change: transform; }
+
+  /* Counter element. Pair with an IntersectionObserver that, on visible, ticks
+     from 0 to data-target over ~1.4s with easeOutQuart, writing into textContent. */
+  .count-up { font-variant-numeric: tabular-nums; }
+
+  /* Pulsing brand glow ring — for "live now" badges, "shipping" tags, primary CTAs. */
+  .pulse-glow { position: relative; }
+  .pulse-glow::after {
+    content: ""; position: absolute; inset: -2px; border-radius: inherit; pointer-events: none;
+    box-shadow: 0 0 0 0 var(--brand-glow);
+    animation: pulseGlow 2.2s ease-out infinite;
+  }
+
+  .animate-aurora { animation: aurora 18s ease-in-out infinite alternate; }
+  .animate-shimmer { animation: shimmer 1.6s ease-in-out infinite; }
+  .animate-float { animation: float 6s ease-in-out infinite; }
+  .animate-glow { animation: glow 2.4s ease-in-out infinite; }
+  .animate-spin-slow { animation: spin 14s linear infinite; }
+  .animate-glitch { animation: glitch 2.8s steps(2, end) infinite; }
+  .animate-marquee { animation: marquee 22s linear infinite; }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  /* Hairline border utilities — use these in place of border-zinc-200 / etc.
+     Color comes from currentColor so they adapt to dark/light contexts. */
+  .hairline       { border: 1px solid var(--hairline); }
+  .hairline-t     { border-top: 1px solid var(--hairline); }
+  .hairline-b     { border-bottom: 1px solid var(--hairline); }
+  .hairline-strong { border: 1px solid var(--hairline-strong); }
+
+  /* Variable-font weight transition — apply to interactive type. */
+  .type-shift { transition: font-variation-settings 400ms var(--ease-hover); }
+  .type-shift:hover { font-variation-settings: "wght" 560; }
+
+  /* 900ms one-shot diagonal shine. Used by ScrollProgressBar and any
+     "this just finished loading" affordance. */
+  .shine-sweep { position: relative; overflow: hidden; }
+  .shine-sweep::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%);
+    transform: translateX(-100%);
+    animation: shineSweep 900ms var(--ease-entrance) forwards;
+  }
+}
+
+@keyframes pulseGlow {
+  0%   { box-shadow: 0 0 0 0 var(--brand-glow); }
+  70%  { box-shadow: 0 0 0 18px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes aurora {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(2%, -3%, 0) scale(1.05); }
+  100% { transform: translate3d(-2%, 2%, 0) scale(1); }
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes float   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes glow    { 0%, 100% { box-shadow: 0 0 0 0 var(--brand-glow); } 50% { box-shadow: 0 0 0 14px transparent; } }
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes glitch  {
+  0%, 100% { transform: translate(0); text-shadow: 0 0 0 transparent; }
+  20% { transform: translate(-1px, 1px); text-shadow: 1.5px 0 0 #14b8a6, -1.5px 0 0 #f97316; }
+  40% { transform: translate(1px, -1px); text-shadow: -1.5px 0 0 #14b8a6, 1.5px 0 0 #f97316; }
+  60% { transform: translate(0, 1px); text-shadow: 1.5px 0 0 #14b8a6, -1.5px 0 0 #f97316; }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes scanlines { 0% { background-position: 0 0; } 100% { background-position: 0 6px; } }
+@keyframes morph {
+  0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; }
+  50%      { border-radius: 70% 30% 46% 54% / 30% 60% 40% 70%; }
+}
+@keyframes holo {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes shineSweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+
+@layer base {
+  body {
+    background: #f5f5f7;
+    color: #1d1d1f;
+    font-family: "Inter", system-ui, sans-serif;
+  }
+  h1, h2, h3 { font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; }
+}
+
+@layer components {
+  .aurora-bg { @apply relative isolate; }
+  .aurora-bg::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background:
+      radial-gradient(at 30% 20%, #f9731611 0%, transparent 50%),
+      radial-gradient(at 70% 80%, #14b8a611 0%, transparent 50%);
+  }
+
+  .card, .glass-card {
+    @apply rounded-3xl p-8 transition-all duration-500 overflow-hidden relative;
+    background: #ffffff;
+    box-shadow: 0 1px 0 0 rgba(0,0,0,0.02), 0 30px 60px -20px rgba(20,20,40,0.06);
+  }
+  .card:hover, .glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 1px 0 0 rgba(0,0,0,0.03), 0 50px 80px -20px rgba(20,20,40,0.1);
+  }
+
+  /* Bento tile variants */
+  .tile-feature { background: #ffffff; }
+  .tile-brand { background: linear-gradient(135deg, #f97316, #ea580c); color: white; }
+  .tile-accent { background: linear-gradient(135deg, #14b8a6, #0d9488); color: white; }
+  .tile-dark { background: #1d1d1f; color: white; }
+  .tile-pattern { background: #ffffff;
+    background-image:
+      radial-gradient(#f9731622 1px, transparent 1px),
+      radial-gradient(#14b8a622 1px, transparent 1px);
+    background-size: 24px 24px, 24px 24px;
+    background-position: 0 0, 12px 12px;
+  }
+
+  .glass-nav { @apply sticky top-0 z-40 px-6 py-3;
+    background: rgba(245,245,247,0.78); backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+
+  .btn-primary, .btn-glow {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-full transition-all duration-300 text-white;
+    background: #1d1d1f;
+  }
+  .btn-primary:hover, .btn-glow:hover { background: #f97316; transform: scale(1.02); }
+
+  .btn-secondary, .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-full transition-all duration-300;
+    background: rgba(0,0,0,0.05); color: #1d1d1f;
+  }
+  .btn-secondary:hover, .btn-ghost:hover { background: rgba(0,0,0,0.1); transform: scale(1.02); }
+
+  .input {
+    @apply w-full rounded-2xl px-5 py-3.5 transition-all duration-200 text-gray-900 placeholder-gray-400;
+    background: #ffffff; border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  }
+  .input:focus { @apply outline-none; border-color: #f97316;
+    box-shadow: 0 0 0 4px #f9731622; }
+
+  .pill { @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-gray-700;
+    background: rgba(0,0,0,0.05);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #f97316, #14b8a6);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  @supports not ((-webkit-background-clip: text) or (background-clip: text)) { .text-gradient { color: #f97316; } }
+
+  /* The bento grid itself — assign tiles classes col-span-X row-span-Y */
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-auto-rows: 12rem;
+    gap: 1.25rem;
+  }
+  @media (max-width: 768px) {
+    .bento-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  
+.shimmer {
+  background: linear-gradient(90deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.10) 50%, rgba(0,0,0,0.04) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+.noise { position: relative; }
+.noise::after {
+  content: ""; position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: var(--grain-opacity); pointer-events: none; mix-blend-mode: overlay; z-index: 1;
+}
+
+}
+
+
+@keyframes shimmer-slide {
+  to { transform: translate(calc(100cqw - 100%), 0); }
+}
+@keyframes spin-around {
+  0%   { transform: translateZ(0) rotate(0); }
+  15%, 35% { transform: translateZ(0) rotate(90deg); }
+  65%, 85% { transform: translateZ(0) rotate(270deg); }
+  100% { transform: translateZ(0) rotate(360deg); }
+}
+@keyframes border-beam {
+  100% { offset-distance: 100%; }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(-100% - var(--gap, 1rem))); }
+}
+@keyframes marquee-vertical {
+  from { transform: translateY(0); }
+  to   { transform: translateY(calc(-100% - var(--gap, 1rem))); }
+}
+.animate-shimmer-slide { animation: shimmer-slide var(--speed, 3s) ease-in-out infinite alternate; }
+.animate-spin-around   { animation: spin-around calc(var(--speed, 3s) * 2) infinite linear; }
+.animate-border-beam   { animation: border-beam var(--duration, 12s) infinite linear; }
+.animate-marquee       { animation: marquee var(--duration, 40s) linear infinite; }
+.animate-marquee-vertical { animation: marquee-vertical var(--duration, 40s) linear infinite; }
+
+
+
+/* ============================================================================
+   SCROLL-DRIVEN ANIMATIONS (native, zero JS)
+   ============================================================================ */
+
+@supports (animation-timeline: view()) {
+  @keyframes scroll-fade-in-kf {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scroll-scale-in-kf {
+    from { opacity: 0; transform: scale(0.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes scroll-slide-left-kf {
+    from { opacity: 0; transform: translateX(-40px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes scroll-slide-right-kf {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes scroll-parallax-up-kf {
+    from { transform: translateY(12%); }
+    to   { transform: translateY(-12%); }
+  }
+  @keyframes scroll-blur-in-kf {
+    from { opacity: 0; filter: blur(8px); transform: translateY(20px); }
+    to   { opacity: 1; filter: blur(0); transform: translateY(0); }
+  }
+
+  .scroll-fade-in {
+    animation: scroll-fade-in-kf both linear;
+    animation-timeline: view();
+    animation-range: entry 0% entry 55%;
+  }
+  .scroll-scale-in {
+    animation: scroll-scale-in-kf both linear;
+    animation-timeline: view();
+    animation-range: entry 0% entry 60%;
+  }
+  .scroll-slide-left {
+    animation: scroll-slide-left-kf both linear;
+    animation-timeline: view();
+    animation-range: entry 0% entry 60%;
+  }
+  .scroll-slide-right {
+    animation: scroll-slide-right-kf both linear;
+    animation-timeline: view();
+    animation-range: entry 0% entry 60%;
+  }
+  .scroll-blur-in {
+    animation: scroll-blur-in-kf both linear;
+    animation-timeline: view();
+    animation-range: entry 0% entry 60%;
+  }
+  .scroll-parallax-up {
+    animation: scroll-parallax-up-kf both linear;
+    animation-timeline: scroll(root);
+  }
+
+  /* Pure-CSS scroll progress bar — drop on a fixed top div */
+  @keyframes scroll-progress-kf {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  .scroll-progress-bar {
+    transform-origin: 0 50%;
+    animation: scroll-progress-kf linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+/* Reduced-motion override — kill all scroll animations */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-fade-in,
+  .scroll-scale-in,
+  .scroll-slide-left,
+  .scroll-slide-right,
+  .scroll-blur-in,
+  .scroll-parallax-up,
+  .scroll-progress-bar {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
+/* ============================================================================
+   VIEW TRANSITIONS — native same-document transitions on route change
+   ============================================================================ */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(root) {
+  animation-name: vt-fade-out-kf;
+}
+::view-transition-new(root) {
+  animation-name: vt-fade-in-kf;
+}
+
+@keyframes vt-fade-out-kf {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes vt-fade-in-kf {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+
+
+/* ── Reveal — scroll-driven clip-path + opacity ───────────────────────── */
+.reveal {
+  opacity: 0;
+  clip-path: inset(8% 0 8% 0);
+  filter: blur(2px);
+  transform: translateY(28px);
+  transition:
+    opacity var(--dur-reveal) var(--ease-entrance),
+    clip-path var(--dur-reveal) var(--ease-entrance),
+    filter var(--dur-base) var(--ease-entrance),
+    transform var(--dur-reveal) var(--ease-entrance);
+  will-change: opacity, clip-path, transform;
+}
+/* Fallback path: when JS adds .is-revealed (browsers without view-timeline) */
+.reveal.is-revealed { opacity: 1; clip-path: inset(0); filter: blur(0); transform: translateY(0); }
+
+/* Modern path: CSS scroll-timeline drives the animation directly. The JS in
+   Reveal.jsx skips the IntersectionObserver when this is supported, so this
+   block MUST animate the reveal on its own — do not combine its selector
+   with .reveal.is-revealed (that breaks the @supports parse). */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: reveal-in linear both;
+    animation-timeline: view();
+    animation-range: entry 5% cover 40%;
+  }
+}
+
+@keyframes reveal-in {
+  from { opacity: 0; clip-path: inset(8% 0 8% 0); filter: blur(2px); transform: translateY(28px); }
+  to   { opacity: 1; clip-path: inset(0); filter: blur(0); transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1 !important; clip-path: none !important; filter: none !important; transform: none !important; animation: none !important; }
+}
+
+
+
+/* ── MagneticCard — pointer-tracked tilt + brand-tinted glow ──────────── */
+.magnetic-card {
+  position: relative;
+  display: block;
+  isolation: isolate;
+  transform-style: preserve-3d;
+  transform: perspective(900px) rotateX(var(--rx-card, 0deg)) rotateY(var(--ry-card, 0deg));
+  transition: transform var(--dur-base) var(--ease-hover);
+  will-change: transform;
+}
+.magnetic-card__content { position: relative; z-index: 1; display: block; }
+.magnetic-card__glow {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
+  opacity: 0; transition: opacity var(--dur-base) var(--ease-hover);
+  background: radial-gradient(
+    260px circle at var(--mx-card, 50%) var(--my-card, 50%),
+    var(--brand-soft, var(--brand-glow)), transparent 60%
+  );
+}
+.magnetic-card[data-glow="true"]:hover .magnetic-card__glow { opacity: 1; }
+@media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+  .magnetic-card { transform: none !important; }
+  .magnetic-card__glow { display: none; }
+}
+
+
+
+/* ── SpotlightCard — pointer-tracked highlight (3 variants) ───────────── */
+.spotlight-card { transition: transform var(--dur-base) var(--ease-hover), border-color var(--dur-base) var(--ease-hover); }
+.spotlight-card__highlight {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-hover);
+}
+/* Variant: radial — soft circle follows cursor (default) */
+.spotlight-card--radial .spotlight-card__highlight {
+  background: radial-gradient(
+    var(--spot-size, 320px) circle at var(--sx, 50%) var(--sy, 50%),
+    color-mix(in oklch, var(--brand) calc(var(--spot-alpha, 0.16) * 100%), transparent),
+    transparent 60%
+  );
+}
+/* Variant: edge — glow concentrates along nearest edge (axis-aligned) */
+.spotlight-card--edge .spotlight-card__highlight {
+  background:
+    radial-gradient(
+      circle at var(--sx, 50%) 0%,
+      color-mix(in oklch, var(--brand) calc(var(--spot-alpha, 0.16) * 100%), transparent),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at var(--sx, 50%) 100%,
+      color-mix(in oklch, var(--accent) calc(var(--spot-alpha, 0.16) * 100%), transparent),
+      transparent 35%
+    );
+}
+/* Variant: lift — radial + small Y-axis lift on hover */
+.spotlight-card--lift .spotlight-card__highlight {
+  background: radial-gradient(
+    var(--spot-size, 320px) circle at var(--sx, 50%) var(--sy, 50%),
+    color-mix(in oklch, var(--brand) calc(var(--spot-alpha, 0.16) * 100%), transparent),
+    transparent 60%
+  );
+}
+.spotlight-card--lift:hover { transform: translateY(-1.5px); }
+
+.spotlight-card:hover .spotlight-card__highlight { opacity: 1; }
+@media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+  .spotlight-card__highlight { display: none; }
+  .spotlight-card--lift:hover { transform: none; }
+}
+
+/* ── MarqueeBand — slow editorial scroll ──────────────────────────────── */
+@keyframes marqueeBandSlide {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(-50% - var(--marquee-gap, 4rem) / 2)); }
+}
+.marquee-band__track {
+  animation: marqueeBandSlide var(--marquee-duration, 60s) linear infinite;
+  animation-direction: var(--marquee-direction, normal);
+  will-change: transform;
+}
+.marquee-band.group:hover .marquee-band__track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-band__track { animation: none !important; transform: none !important; }
+}
+
+/* ── PinnedSequence — sticky-stacked scroll storytelling ──────────────── */
+.pinned-sequence { position: relative; }
+@media (prefers-reduced-motion: reduce) {
+  .pinned-sequence { height: auto !important; }
+  .pinned-sequence > div { position: static !important; height: auto !important; }
+  .pinned-sequence > div > div { position: static !important; transform: none !important; opacity: 1 !important; }
+}
+
+/* ── FAQ accordion focus ring ─────────────────────────────────────────── */
+.faq-row button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+/* ── Skeleton fallback for prefers-reduced-motion ─────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer { animation: none !important; background-image: none !important; opacity: 0.7; }
+}

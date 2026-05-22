@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  role         String        @default("contractor")
+  company      String?
+  createdAt    DateTime      @default(now())
+  projects     Project[]
+  photos       Photo[]
+  dailyReports DailyReport[]
+}
+
+model Project {
+  id           String        @id @default(cuid())
+  name         String
+  address      String?
+  description  String?
+  status       String        @default("active")
+  startDate    DateTime?
+  endDate      DateTime?
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  photos       Photo[]
+  dailyReports DailyReport[]
+  shareLinks   ShareLink[]
+}
+
+model Photo {
+  id        String         @id @default(cuid())
+  url       String
+  caption   String?
+  takenAt   DateTime       @default(now())
+  location  String?
+  projectId String
+  project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  analysis  PhotoAnalysis?
+}
+
+model PhotoAnalysis {
+  id              String   @id @default(cuid())
+  photoId         String   @unique
+  photo           Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  progressPercent Int?
+  detectedItems   Json?
+  complianceFlags Json?
+  summary         String?
+  scheduleAlert   String?
+  createdAt       DateTime @default(now())
+}
+
+model DailyReport {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date          DateTime
+  weather       String?
+  crewCount     Int?
+  workPerformed String
+  issues        String?
+  aiSummary     String?
+  createdAt     DateTime @default(now())
+}
+
+model ShareLink {
+  id        String    @id @default(cuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+}

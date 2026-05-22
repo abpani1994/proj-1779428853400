@@ -1,0 +1,20 @@
+// Re-export from the canonical location so relative imports from components/ resolve.
+export {
+  ease,
+  spring,
+  fadeUp,
+  fadeIn,
+  slideInLeft,
+  slideInRight,
+  scaleIn,
+  revealMask,
+  staggerContainer,
+  staggerContainerFast,
+  splitChars,
+  cardHover,
+  buttonHover,
+  breathe,
+  layoutSpring,
+  sheetUp,
+  reduceMotion,
+} from "../../lib/motion-presets.js";
