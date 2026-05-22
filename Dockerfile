@@ -28,10 +28,12 @@ COPY --from=backend-deps /app/backend/node_modules ./backend/node_modules
 COPY backend/ ./backend/
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-USER appuser
-
 WORKDIR /app/backend
+RUN npx prisma generate
+
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN chown -R appuser:appgroup /app/backend/node_modules/.prisma
+USER appuser
 
 EXPOSE 3001
 
