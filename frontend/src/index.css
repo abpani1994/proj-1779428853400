@@ -611,3 +611,18 @@
 @media (prefers-reduced-motion: reduce) {
   .shimmer { animation: none !important; background-image: none !important; opacity: 0.7; }
 }
+
+/* ============================================================================
+   GRID ALIGNMENT HELPERS — ensure equal-height cards in grid layouts
+   ============================================================================ */
+
+/* Force grid children to stretch to equal heights */
+.items-stretch > * {
+  height: 100%;
+}
+
+/* Ensure grid rows in feature/testimonial/workflow sections align properly */
+.grid > .card {
+  display: flex;
+  flex-direction: column;
+}

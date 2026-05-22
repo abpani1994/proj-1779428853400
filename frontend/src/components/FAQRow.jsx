@@ -25,7 +25,7 @@ export default function FAQRow({
   const panelId = useId();
 
   return (
-    <div className={cn("faq-row card py-5", className)}>
+    <div className={cn("faq-row py-5 px-6", className)}>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}

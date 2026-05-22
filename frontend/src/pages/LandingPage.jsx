@@ -50,56 +50,48 @@ const features = [
     icon: "lucide:layers",
     title: "Smart photo timeline",
     desc: "Every photo auto-sorted by project, date, and location. Visual history at a glance.",
-    span: "col-span-6 md:col-span-3 row-span-2",
     variant: "tile-brand",
   },
   {
     icon: "lucide:bot",
     title: "AI progress detection",
     desc: "Claude vision analyzes each photo. Materials, completion, safety flags — detected automatically.",
-    span: "col-span-6 md:col-span-3 row-span-1",
     variant: "tile-feature",
   },
   {
     icon: "lucide:file-text",
     title: "Crew daily reports",
     desc: "One-tap daily logs. AI generates the summary your clients expect.",
-    span: "col-span-6 md:col-span-3 row-span-1",
     variant: "tile-pattern",
   },
   {
     icon: "lucide:bar-chart-3",
     title: "Progress tracking",
     desc: "Completion percentages updated with every photo. Trends over time.",
-    span: "col-span-6 md:col-span-2 row-span-1",
     variant: "tile-dark",
   },
   {
     icon: "lucide:share-2",
     title: "Client share portal",
     desc: "One link. Clients see progress photos, reports, and timelines. No login needed.",
-    span: "col-span-6 md:col-span-2 row-span-1",
     variant: "tile-accent",
   },
   {
     icon: "lucide:shield",
     title: "Compliance docs",
     desc: "Safety flags and compliance documentation generated from your photos.",
-    span: "col-span-6 md:col-span-2 row-span-1",
     variant: "tile-feature",
   },
   {
     icon: "lucide:bell",
     title: "Schedule alerts",
     desc: "AI detects when progress slows. Get notified before delays become problems.",
-    span: "col-span-6 md:col-span-3 row-span-2",
     variant: "tile-feature",
   },
   {
     icon: "lucide:smartphone",
     title: "No special hardware",
     desc: "Works with any phone camera. No drones, no sensors, no training.",
-    span: "col-span-6 md:col-span-3 row-span-1",
     variant: "tile-dark",
   },
 ];
@@ -245,16 +237,16 @@ function CountUpNumber({ value, suffix, label }) {
     return () => observer.disconnect();
   }, [value, suffix]);
   return (
-    <div className="card text-center p-8">
+    <div className="card text-center p-8 h-full flex flex-col items-center justify-center">
       <span
         ref={numRef}
-        className="count-up text-gradient text-4xl md:text-5xl font-bold"
+        className="count-up text-gradient text-4xl md:text-5xl font-bold block"
         style={{ fontVariantNumeric: "tabular-nums" }}
         data-counter={value}
       >
         0{suffix}
       </span>
-      <p className="mt-2 text-sm" style={{ color: "var(--text-2)" }}>{label}</p>
+      <p className="mt-3 text-sm" style={{ color: "var(--text-2)" }}>{label}</p>
     </div>
   );
 }
@@ -365,11 +357,12 @@ export default function LandingPage() {
               </p>
             </div>
           </Reveal>
-          <div className="grid grid-cols-6 gap-4 auto-rows-[180px]">
-            {features.map((f, i) => (
+          {/* Row 1: 2 cards, equal width */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            {features.slice(0, 2).map((f, i) => (
               <motion.div
                 key={f.title}
-                className={`card scroll-reveal-item ${f.span} p-6 flex flex-col justify-between`}
+                className="card scroll-reveal-item p-6 flex flex-col justify-between min-h-[200px]"
                 variants={cardHover}
                 whileHover="hover"
                 style={{ transitionDelay: `${i * 60}ms` }}
@@ -380,7 +373,49 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>{f.title}</h3>
                 </div>
-                <p className="text-sm mt-2" style={{ color: "var(--text-2)" }}>{f.desc}</p>
+                <p className="text-sm mt-3" style={{ color: "var(--text-2)" }}>{f.desc}</p>
+                <BorderBeam />
+              </motion.div>
+            ))}
+          </div>
+          {/* Row 2: 3 cards, equal width */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+            {features.slice(2, 5).map((f, i) => (
+              <motion.div
+                key={f.title}
+                className="card scroll-reveal-item p-6 flex flex-col justify-between min-h-[200px]"
+                variants={cardHover}
+                whileHover="hover"
+                style={{ transitionDelay: `${(i + 2) * 60}ms` }}
+              >
+                <div>
+                  <div className="pill inline-flex items-center justify-center w-10 h-10 rounded-xl mb-4" style={{ background: "var(--accent-a10, rgba(99,102,241,0.1))" }}>
+                    <Icon icon={f.icon} width={22} height={22} style={{ color: "var(--accent)" }} />
+                  </div>
+                  <h3 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>{f.title}</h3>
+                </div>
+                <p className="text-sm mt-3" style={{ color: "var(--text-2)" }}>{f.desc}</p>
+                <BorderBeam />
+              </motion.div>
+            ))}
+          </div>
+          {/* Row 3: 3 cards, equal width */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {features.slice(5, 8).map((f, i) => (
+              <motion.div
+                key={f.title}
+                className="card scroll-reveal-item p-6 flex flex-col justify-between min-h-[200px]"
+                variants={cardHover}
+                whileHover="hover"
+                style={{ transitionDelay: `${(i + 5) * 60}ms` }}
+              >
+                <div>
+                  <div className="pill inline-flex items-center justify-center w-10 h-10 rounded-xl mb-4" style={{ background: "var(--accent-a10, rgba(99,102,241,0.1))" }}>
+                    <Icon icon={f.icon} width={22} height={22} style={{ color: "var(--accent)" }} />
+                  </div>
+                  <h3 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>{f.title}</h3>
+                </div>
+                <p className="text-sm mt-3" style={{ color: "var(--text-2)" }}>{f.desc}</p>
                 <BorderBeam />
               </motion.div>
             ))}
@@ -449,12 +484,12 @@ export default function LandingPage() {
             ].map((item, i) => (
               <motion.div
                 key={item.step}
-                className="card scroll-reveal-item p-0 overflow-hidden flex flex-col"
+                className="card scroll-reveal-item p-0 overflow-hidden flex flex-col h-full"
                 variants={cardHover}
                 whileHover="hover"
                 style={{ transitionDelay: `${i * 120}ms` }}
               >
-                <div className="relative h-48 overflow-hidden">
+                <div className="relative h-48 overflow-hidden flex-shrink-0">
                   <img
                     src={item.img}
                     alt={item.title}
@@ -466,7 +501,7 @@ export default function LandingPage() {
                 </div>
                 <div className="p-6 flex-1 flex flex-col">
                   <div className="flex items-center gap-3 mb-3">
-                    <Icon icon={item.icon} width={24} height={24} style={{ color: "var(--accent)" }} />
+                    <Icon icon={item.icon} width={24} height={24} className="flex-shrink-0" style={{ color: "var(--accent)" }} />
                     <h3 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>{item.title}</h3>
                   </div>
                   <p className="text-sm flex-1" style={{ color: "var(--text-2)" }}>{item.desc}</p>
@@ -498,21 +533,21 @@ export default function LandingPage() {
               </h2>
             </div>
           </Reveal>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
             {testimonials.map((t, i) => (
               <motion.div
                 key={t.name}
-                className="card scroll-reveal-item p-8 flex flex-col"
+                className="card scroll-reveal-item p-8 flex flex-col h-full"
                 variants={cardHover}
                 whileHover="hover"
                 style={{ transitionDelay: `${i * 100}ms` }}
               >
-                <p className="text-base italic flex-1" style={{ color: "var(--text-2)" }}>"{t.quote}"</p>
-                <div className="mt-6 flex items-center gap-4">
+                <p className="text-base italic flex-1 leading-relaxed" style={{ color: "var(--text-2)" }}>"{t.quote}"</p>
+                <div className="mt-6 pt-4 flex items-center gap-4 border-t" style={{ borderColor: "var(--hairline)" }}>
                   <img
                     src={t.avatar}
                     alt={t.name}
-                    className="w-10 h-10 rounded-full"
+                    className="w-10 h-10 rounded-full flex-shrink-0"
                   />
                   <div>
                     <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{t.name}</p>
